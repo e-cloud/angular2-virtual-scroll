@@ -134,6 +134,13 @@ export class VirtualScrollComponent implements OnChanges, OnDestroy {
     this.previousEnd = undefined;
     const items = (changes as any).items || {};
     if ((changes as any).items != undefined && items.previousValue == undefined || (items.previousValue != undefined && items.previousValue.length === 0)) {
+
+      // startupLoop is a temporary solution for rendering out the correct viewport items.
+      // When users don't specify the child dimensions(width and height) and we haven't render anything,
+      // we have to figure out the dimensions ourselves. That's to assume that child dimensions
+      // is the same as viewport dimensions. Therefore, for the initial rendering, we will render the first
+      // item. Then, the second round, we will render the full viewport based on the element's dimension of
+      // the first rendered element.
       this.startupLoop = true;
     }
     this.refresh();
@@ -286,34 +293,37 @@ export class VirtualScrollComponent implements OnChanges, OnDestroy {
     start = Math.max(0, start);
     end += this.bufferAmount;
     end = Math.min(items.length, end);
+
     if (start !== this.previousStart || end !== this.previousEnd) {
 
       // update the scroll list
       this.viewPortItems = items.slice(start, end);
       this.update.emit(this.viewPortItems);
 
-      // emit 'start' event
-      if (start !== this.previousStart && this.startupLoop === false) {
-        this.start.emit({ start, end });
-      }
+      if (this.startupLoop) {
+        this.refresh();
+      } else {
+        // emit 'start' event
+        if (start !== this.previousStart) {
+          this.start.emit({ start, end });
+        }
 
-      // emit 'end' event
-      if (end !== this.previousEnd && this.startupLoop === false) {
-        this.end.emit({ start, end });
+        // emit 'end' event
+        if (end !== this.previousEnd) {
+          this.end.emit({ start, end });
+        }
+
+        this.change.emit({ start, end });
       }
 
       this.previousStart = start;
       this.previousEnd = end;
 
-      if (this.startupLoop === true) {
-        this.refresh();
-      } else {
-        this.change.emit({ start, end });
-      }
-
-    } else if (this.startupLoop === true) {
+    } else if (this.startupLoop) {
       this.startupLoop = false;
-      this.refresh();
+      // todo: There is no found usecase that causes changes after stable rendering
+      // However, if anything goes wrong, re-enable next line.
+      // this.refresh();
     }
   }
 }
