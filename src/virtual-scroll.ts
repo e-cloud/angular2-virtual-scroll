@@ -115,6 +115,7 @@ export class VirtualScrollComponent implements OnChanges, OnDestroy {
   startupLoop = true;
   window = window;
 
+  private ticking = false;
   private _parentScroll: Element | Window;
 
   constructor(private element: ElementRef) { }
@@ -139,7 +140,16 @@ export class VirtualScrollComponent implements OnChanges, OnDestroy {
   }
 
   refresh() {
-    requestAnimationFrame(() => this.calculateItems());
+    if (this.ticking) {
+      return;
+    }
+
+    this.ticking = true;
+
+    requestAnimationFrame(() => {
+      this.ticking = false;
+      this.calculateItems();
+    });
   }
 
   scrollInto(item: any) {
