@@ -8,7 +8,6 @@ import {
   NgModule,
   OnChanges,
   OnDestroy,
-  OnInit,
   Output,
   SimpleChanges,
   ViewChild,
@@ -20,48 +19,52 @@ export interface ChangeEvent {
 }
 
 @Component({
-  selector: 'virtual-scroll,[virtualScroll]',
+  selector: 'virtual-scroll, [virtualScroll]',
   exportAs: 'virtualScroll',
   template: `
     <div class="total-padding" [style.height]="scrollHeight + 'px'"></div>
     <div class="scrollable-content" #content [style.transform]="'translateY(' + topPadding + 'px)'"
-     [style.webkitTransform]="'translateY(' + topPadding + 'px)'">
+         [style.webkitTransform]="'translateY(' + topPadding + 'px)'">
       <ng-content></ng-content>
     </div>
   `,
   host: {
-    '[style.overflow-y]': "parentScroll ? 'hidden' : 'auto'"
+    '[style.overflow-y]': 'parentScroll ? "hidden" : "auto"'
   },
-  styles: [`
-    :host {
-      overflow: hidden;
-      position: relative;
-	  display: block;
-      -webkit-overflow-scrolling: touch;
-    }
-    .scrollable-content {
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      position: absolute;
-    }
-    .total-padding {
-      width: 1px;
-      opacity: 0;
-    }
-  `]
+  styles: [
+      `
+      :host {
+        overflow: hidden;
+        position: relative;
+        display: block;
+        -webkit-overflow-scrolling: touch;
+      }
+
+      .scrollable-content {
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        position: absolute;
+      }
+
+      .total-padding {
+        width: 1px;
+        opacity: 0;
+      }
+      `
+  ],
 })
-export class VirtualScrollComponent implements OnInit, OnChanges, OnDestroy {
+export class VirtualScrollComponent implements OnChanges, OnDestroy {
 
   @Input()
   items: any[] = [];
 
   @Input()
-  scrollbarWidth: number;
+  scrollbarWidth = 0;
 
   @Input()
-  scrollbarHeight: number;
+  scrollbarHeight = 0;
 
   @Input()
   childWidth: number;
@@ -70,12 +73,8 @@ export class VirtualScrollComponent implements OnInit, OnChanges, OnDestroy {
   childHeight: number;
 
   @Input()
-  bufferAmount: number = 0;
+  bufferAmount = 0;
 
-  private refreshHandler = () => {
-    this.refresh();
-  };
-  private _parentScroll: Element | Window;
   @Input()
   set parentScroll(element: Element | Window) {
     if (this._parentScroll === element) {
@@ -92,7 +91,6 @@ export class VirtualScrollComponent implements OnInit, OnChanges, OnDestroy {
 
   @Output()
   update: EventEmitter<any[]> = new EventEmitter<any[]>();
-  viewPortItems: any[];
 
   @Output()
   change: EventEmitter<ChangeEvent> = new EventEmitter<ChangeEvent>();
@@ -109,23 +107,21 @@ export class VirtualScrollComponent implements OnInit, OnChanges, OnDestroy {
   @ContentChild('container')
   containerElementRef: ElementRef;
 
+  viewPortItems: any[];
   topPadding: number;
   scrollHeight: number;
   previousStart: number;
   previousEnd: number;
-  startupLoop: boolean = true;
+  startupLoop = true;
   window = window;
+
+  private _parentScroll: Element | Window;
 
   constructor(private element: ElementRef) { }
 
   @HostListener('scroll')
   onScroll() {
     this.refresh();
-  }
-
-  ngOnInit() {
-    this.scrollbarWidth = 0; // this.element.nativeElement.offsetWidth - this.element.nativeElement.clientWidth;
-    this.scrollbarHeight = 0; // this.element.nativeElement.offsetHeight - this.element.nativeElement.clientHeight;
   }
 
   ngOnDestroy() {
@@ -155,6 +151,10 @@ export class VirtualScrollComponent implements OnInit, OnChanges, OnDestroy {
     let d = this.calculateDimensions();
     el.scrollTop = (Math.floor(index / d.itemsPerRow) * d.childHeight)
       - (d.childHeight * Math.min(index, this.bufferAmount));
+    this.refresh();
+  }
+
+  private refreshHandler() {
     this.refresh();
   }
 
@@ -312,4 +312,4 @@ export class VirtualScrollComponent implements OnInit, OnChanges, OnDestroy {
   exports: [VirtualScrollComponent],
   declarations: [VirtualScrollComponent]
 })
-export class VirtualScrollModule { }
+export class VirtualScrollModule {}
