@@ -1,0 +1,11 @@
+{
+  "name": "angular2-vritual-scroll",
+  "version": "0.0.0",
+  "repository": "https://github.com/e-cloud/angular2-virtual-scroll.git",
+  "author": "david <david@spektrakel.de>",
+  "license": "MIT",
+  "peerDependencies": {
+    "@angular/core": "^4.1.2",
+    "@angular/common": "^4.1.2"
+  }
+}
