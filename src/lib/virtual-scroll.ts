@@ -4,12 +4,14 @@ import {
   ContentChild,
   ElementRef,
   EventEmitter,
-  HostListener,
   Input,
   NgModule,
+  NgZone,
   OnChanges,
   OnDestroy,
+  OnInit,
   Output,
+  Renderer2,
   SimpleChange,
   SimpleChanges,
   ViewChild,
@@ -34,9 +36,8 @@ function getRootScrollContainerIfNeeded(element) {
   selector: 'virtual-scroll, [virtualScroll]',
   exportAs: 'virtualScroll',
   template: `
-    <div class="total-padding" [style.height]="scrollHeight + 'px'"></div>
-    <div class="scrollable-content" #content [style.transform]="'translateY(' + topPadding + 'px)'"
-         [style.webkitTransform]="'translateY(' + topPadding + 'px)'">
+    <div class="total-padding" #bracer></div>
+    <div class="scrollable-content" #content>
       <ng-content></ng-content>
     </div>
   `,
@@ -68,7 +69,7 @@ function getRootScrollContainerIfNeeded(element) {
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class VirtualScrollComponent implements OnChanges, OnDestroy {
+export class VirtualScrollComponent implements OnInit, OnChanges, OnDestroy {
 
   @Input()
   items: any[] = [];
@@ -93,7 +94,6 @@ export class VirtualScrollComponent implements OnChanges, OnDestroy {
     if (this._parentScroll === element) {
       return;
     }
-    this.removeParentEventHandlers(this._parentScroll);
     this._parentScroll = element;
     this.addParentEventHandlers(this._parentScroll);
   }
@@ -114,6 +114,9 @@ export class VirtualScrollComponent implements OnChanges, OnDestroy {
   @Output()
   end: EventEmitter<ChangeEvent> = new EventEmitter<ChangeEvent>();
 
+  @ViewChild('bracer', { read: ElementRef })
+  bracerElementRef: ElementRef;
+
   @ViewChild('content', { read: ElementRef })
   contentElementRef: ElementRef;
 
@@ -126,20 +129,27 @@ export class VirtualScrollComponent implements OnChanges, OnDestroy {
   previousStart: number;
   previousEnd: number;
   startupLoop = true;
-  window = window;
 
   private ticking = false;
   private _parentScroll: Element | Window;
 
-  constructor(private element: ElementRef) { }
+  private disposeScrollHandler: () => void | null = null;
+  private disposeResizeHandler: () => void | null = null;
 
-  @HostListener('scroll')
-  onScroll() {
-    this.refresh();
+  constructor(
+    private readonly element: ElementRef,
+    private readonly renderer: Renderer2,
+    private readonly zone: NgZone
+  ) { }
+
+  ngOnInit() {
+    if (!this.parentScroll) {
+      this.addParentEventHandlers(this.element.nativeElement);
+    }
   }
 
   ngOnDestroy() {
-    this.removeParentEventHandlers(this.parentScroll);
+    this.removeParentEventHandlers();
   }
 
   ngOnChanges(changes: SimpleChanges) {
@@ -166,10 +176,11 @@ export class VirtualScrollComponent implements OnChanges, OnDestroy {
     }
 
     this.ticking = true;
-
-    requestAnimationFrame(() => {
-      this.ticking = false;
-      this.calculateItems();
+    this.zone.runOutsideAngular(() => {
+      requestAnimationFrame(() => {
+        this.ticking = false;
+        this.calculateItems();
+      });
     });
   }
 
@@ -181,30 +192,37 @@ export class VirtualScrollComponent implements OnChanges, OnDestroy {
     }
 
     const d = this.calculateDimensions();
-    el.scrollTop = (Math.floor(index / d.itemsPerRow) * d.childHeight)
-      - (d.childHeight * Math.min(index, this.bufferAmount));
+    this.renderer.setProperty(el, 'scrollTop', (Math.floor(index / d.itemsPerRow) * d.childHeight)
+      - (d.childHeight * Math.min(index, this.bufferAmount)));
     this.refresh();
   }
 
-  private refreshHandler() {
+  private refreshHandler = () => {
     this.refresh();
   }
 
   private addParentEventHandlers(parentScroll: Element | Window) {
+    this.removeParentEventHandlers();
     if (parentScroll) {
-      parentScroll.addEventListener('scroll', this.refreshHandler);
-      if (parentScroll instanceof Window) {
-        parentScroll.addEventListener('resize', this.refreshHandler);
-      }
+      this.zone.runOutsideAngular(() => {
+        this.disposeScrollHandler =
+          this.renderer.listen(parentScroll, 'scroll', this.refreshHandler);
+        if (parentScroll instanceof Window) {
+          this.disposeScrollHandler =
+            this.renderer.listen('window', 'resize', this.refreshHandler);
+        }
+      });
     }
   }
 
-  private removeParentEventHandlers(parentScroll: Element | Window) {
-    if (parentScroll) {
-      parentScroll.removeEventListener('scroll', this.refreshHandler);
-      if (parentScroll instanceof Window) {
-        parentScroll.removeEventListener('resize', this.refreshHandler);
-      }
+  private removeParentEventHandlers() {
+    if (this.disposeScrollHandler) {
+      this.disposeScrollHandler();
+      this.disposeScrollHandler = null;
+    }
+    if (this.disposeResizeHandler) {
+      this.disposeResizeHandler();
+      this.disposeResizeHandler = null;
     }
   }
 
@@ -296,16 +314,23 @@ export class VirtualScrollComponent implements OnChanges, OnDestroy {
   }
 
   private calculateItems() {
+    NgZone.assertNotInAngularZone();
+
     const d = this.calculateDimensions();
     const items = this.items || [];
     const offsetTop = this.getElementsOffset();
-    this.scrollHeight = d.childHeight * d.itemCount / d.itemsPerRow;
+    const scrollHeight = d.childHeight * d.itemCount / d.itemsPerRow;
+
+    if (scrollHeight !== this.scrollHeight) {
+      this.renderer.setStyle(this.bracerElementRef.nativeElement, 'height', `${scrollHeight}px`);
+      this.scrollHeight = scrollHeight;
+    }
 
     const el = this.findScrollContainer();
 
     // reset the scrollTop if it overflows the container
     if (el.scrollTop > (this.scrollHeight + offsetTop)) {
-      el.scrollTop = this.scrollHeight + offsetTop;
+      this.renderer.setProperty(el, 'scrollTop', this.scrollHeight + offsetTop);
     }
 
     // calc the actual scrollTop regardless of other factors
@@ -326,8 +351,14 @@ export class VirtualScrollComponent implements OnChanges, OnDestroy {
     const maxStart = Math.max(0, maxEnd - d.itemsPerCol * d.itemsPerRow);
     let start = Math.min(maxStart, Math.floor(rowIndexByScrollTop) * d.itemsPerRow);
 
-    this.topPadding = d.childHeight * Math.ceil(start / d.itemsPerRow)
+    const topPadding = d.childHeight * Math.ceil(start / d.itemsPerRow)
       - (d.childHeight * Math.min(start, this.bufferAmount)) || 0;
+
+    if (topPadding !== this.topPadding) {
+      this.renderer.setStyle(this.contentElementRef.nativeElement, 'transform', `translateY(${topPadding}px)`);
+      this.renderer.setStyle(this.contentElementRef.nativeElement, 'webkitTransform', `translateY(${topPadding}px)`);
+      this.topPadding = topPadding;
+    }
 
     start = !isNaN(start) ? start : 0;
     end = !isNaN(end) ? end : 0;
@@ -337,30 +368,30 @@ export class VirtualScrollComponent implements OnChanges, OnDestroy {
     end = Math.min(items.length, end);
 
     if (start !== this.previousStart || end !== this.previousEnd) {
+      this.zone.run(() => {
+        // update the scroll list
+        this.viewPortItems = items.slice(start, end);
+        this.update.emit(this.viewPortItems);
 
-      // update the scroll list
-      this.viewPortItems = items.slice(start, end);
-      this.update.emit(this.viewPortItems);
+        if (this.startupLoop) {
+          this.refresh();
+        } else {
+          // emit 'start' event
+          if (start !== this.previousStart) {
+            this.start.emit({ start, end });
+          }
 
-      if (this.startupLoop) {
-        this.refresh();
-      } else {
-        // emit 'start' event
-        if (start !== this.previousStart) {
-          this.start.emit({ start, end });
+          // emit 'end' event
+          if (end !== this.previousEnd) {
+            this.end.emit({ start, end });
+          }
+
+          this.change.emit({ start, end });
         }
 
-        // emit 'end' event
-        if (end !== this.previousEnd) {
-          this.end.emit({ start, end });
-        }
-
-        this.change.emit({ start, end });
-      }
-
-      this.previousStart = start;
-      this.previousEnd = end;
-
+        this.previousStart = start;
+        this.previousEnd = end;
+      });
     } else if (this.startupLoop) {
       this.startupLoop = false;
       // todo: There is no found usecase that causes changes after stable rendering
