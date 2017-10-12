@@ -1,11 +1,17 @@
 {
-  "name": "angular2-vritual-scroll",
+  "name": "@e-cloud/ngx-virtual-scroll",
   "version": "0.0.0",
-  "repository": "https://github.com/e-cloud/angular2-virtual-scroll.git",
+  "description": "Angular 2 module for virtual -infinite- list. Supports multi-column",
+  "repository": "https://github.com/e-cloud/ngx-virtual-scroll.git",
   "author": "david <david@spektrakel.de>",
+  "contributors": [
+    "e-cloud <saintscott119@gmail.com>"
+  ],
   "license": "MIT",
   "peerDependencies": {
-    "@angular/core": "^4.1.2",
-    "@angular/common": "^4.1.2"
+    "@angular/core": "^4.4.3",
+    "@angular/common": "^4.4.3",
+    "rxjs": "^5.4.3",
+    "typescript": "^2.4.0"
   }
 }
