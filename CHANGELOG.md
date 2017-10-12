@@ -1,3 +1,33 @@
+# Change Log
+
+All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
+
+<a name="0.3.0"></a>
+# 0.3.0 (2017-10-12)
+
+
+### Bug Fixes
+
+* prevent memory leak when component is destroyed ([cfdaefa](https://github.com/e-cloud/ngx-virtual-scroll/commit/cfdaefa))
+
+
+### Features
+
+* add attribute selector ([4a80fb4](https://github.com/e-cloud/ngx-virtual-scroll/commit/4a80fb4))
+* add exportAs to component ([06a6060](https://github.com/e-cloud/ngx-virtual-scroll/commit/06a6060))
+* **bufferAmount:** add bufferAmount option ([fbea7d7](https://github.com/e-cloud/ngx-virtual-scroll/commit/fbea7d7))
+* refine the logic and fix a bunch of problems ([de024cd](https://github.com/e-cloud/ngx-virtual-scroll/commit/de024cd))
+* update the project structure with angular-cli and ng-packagr ([bb4306e](https://github.com/e-cloud/ngx-virtual-scroll/commit/bb4306e))
+
+
+### Performance Improvements
+
+* **requestAnimationFrame:** add a lock logic to refresh method ([ae7448f](https://github.com/e-cloud/ngx-virtual-scroll/commit/ae7448f))
+* **startupLoop:** simplify the startupLoop logic and docs about why ([ea5ba42](https://github.com/e-cloud/ngx-virtual-scroll/commit/ea5ba42))
+* move frequent style update logic outside ngZone ([c0e67dc](https://github.com/e-cloud/ngx-virtual-scroll/commit/c0e67dc))
+
+
+
 
 # v0.2.2
 
