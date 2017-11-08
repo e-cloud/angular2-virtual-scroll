@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+<a name="0.4.0"></a>
+# [0.4.0](https://github.com/e-cloud/ngx-virtual-scroll/compare/v0.3.0...v0.4.0) (2017-11-08)
+
+
+### Features
+
+* **deps:** upgrade deps and support Angular 5 ([c21fbdd](https://github.com/e-cloud/ngx-virtual-scroll/commit/c21fbdd))
+
+
+
 <a name="0.3.0"></a>
 # 0.3.0 (2017-10-12)
 
