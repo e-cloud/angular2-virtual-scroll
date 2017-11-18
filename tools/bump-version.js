@@ -5,6 +5,6 @@ const targetFilePath = 'dist/package.json'
 
 const target = fs.readFileSync(targetFilePath).toString()
 
-fs.writeFileSync(targetFilePath, target.replace(/"version": "(.+?)"/, `"version": "${version}"`))
+fs.writeFileSync(targetFilePath, target.replace(/"version":\s?"(.+?)"/, `"version": "${version}"`))
 
 console.log('src version bumped')
