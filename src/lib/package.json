@@ -9,7 +9,7 @@
   ],
   "license": "MIT",
   "peerDependencies": {
-    "@angular/core": "^4.4.3 || ~5.0.0",
+    "@angular/core": "^4.4.3 || ^5.0.0",
     "typescript": "^2.4.0"
   }
 }
