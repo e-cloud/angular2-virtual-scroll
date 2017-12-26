@@ -69,10 +69,10 @@ function getRootScrollContainerIfNeeded(element) {
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class VirtualScrollComponent implements OnInit, OnChanges, OnDestroy {
+export class VirtualScrollComponent<T> implements OnInit, OnChanges, OnDestroy {
 
   @Input()
-  items: any[] = [];
+  items: T[] = [];
 
   @Input()
   scrollbarWidth = 0;
@@ -103,16 +103,16 @@ export class VirtualScrollComponent implements OnInit, OnChanges, OnDestroy {
   }
 
   @Output()
-  update: EventEmitter<any[]> = new EventEmitter<any[]>();
+  update: EventEmitter<T[]> = new EventEmitter();
 
   @Output()
-  change: EventEmitter<ChangeEvent> = new EventEmitter<ChangeEvent>();
+  change: EventEmitter<ChangeEvent> = new EventEmitter();
 
   @Output()
-  start: EventEmitter<ChangeEvent> = new EventEmitter<ChangeEvent>();
+  start: EventEmitter<ChangeEvent> = new EventEmitter();
 
   @Output()
-  end: EventEmitter<ChangeEvent> = new EventEmitter<ChangeEvent>();
+  end: EventEmitter<ChangeEvent> = new EventEmitter();
 
   @ViewChild('bracer', { read: ElementRef })
   bracerElementRef: ElementRef;
@@ -123,7 +123,7 @@ export class VirtualScrollComponent implements OnInit, OnChanges, OnDestroy {
   @ContentChild('container')
   containerElementRef: ElementRef;
 
-  viewPortItems: any[];
+  viewPortItems: T[];
   topPadding: number;
   scrollHeight: number;
   previousStart: number;
@@ -184,7 +184,7 @@ export class VirtualScrollComponent implements OnInit, OnChanges, OnDestroy {
     });
   }
 
-  scrollInto(item: any) {
+  scrollInto(item: T) {
     const el = this.findScrollContainer();
     const index = (this.items || []).indexOf(item);
     if (index < 0 || index >= (this.items || []).length) {
